@@ -1,0 +1,3 @@
+Tải và cài đặt sasm: https://dman95.github.io/SASM/english.html
+
+convert .asm to .exe file: vào sasm bấm tổ hợp phím ctrl + shift + e. Ta sẽ lưu file .asm thành .exe
