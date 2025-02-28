@@ -1,5 +1,0 @@
-Build bằng vs code. Sử dụng masm x86
-
-File .exe: task 2\task 2\Debug
-File .sln: task 2\task 2
-File. asm: task 2\task 2\ task 2
