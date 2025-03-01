@@ -5,7 +5,7 @@ Hầu hết hàm ở Win32 API sử dụng calling convention (giao thức gọi
 
 https://learn.microsoft.com/en-us/cpp/cpp/stdcall?view=msvc-170
 
-- Cú pháp: return-type __stdcall function-name[( argument-list )]
+- Cú pháp: return-type `__stdcall` function-name[`(` argument-list `)`]
 
 - Khi sử dụng `stdcall`, hàm gọi(caller) sẽ push giá trị của các đối số vào stack. Hàm được gọi (callee) pop các tham số của nó trên stack theo thứ tự từ phải sang trái do stack hoạt động theo cơ chế LIFO. Callee có trách nghiệm làm sạch stack.
 
@@ -36,7 +36,7 @@ Có 2 sự thay đổi ta cần quan tâm.
 - Ở stack có chứa các đối số và địa chỉ của dòng lệnh.
 - Thanh ghi `eax`, `ecx`, `edx`, `eip`, `esp` thay đổi giá trị.
 
-Vậy là `call` và `invoke` tự động push `[eip +4]` chứa địa chỉ bên dưới vào stack. 
+Vậy là `call` và `invoke` tự động `push [eip +4]` chứa địa chỉ bên dưới vào stack. 
 
 Vì ta đang bàn luận về calling convention nên em sẽ nói ngắn gọn về cách hoạt động của callee.
 - Callee tạo 1 stack frame để lưu lại địa chỉ trước đó sau đó mới pop các đối số và thực hiện chức năng của hàm.
@@ -48,6 +48,12 @@ Với sự thay đổi của thanh ghi, ta có thể suy ra `eax` chứa giá tr
 
 ## Tổng kết:
 - Calling convention được sử dụng là stdcall.
-- Khi sử dụng lệnh `call` hay `invoke` thì trên stack phải chứa các đối số. 2 lệnh sẽ tự động push `eip`.
+- Khi gọi hàm thì trên stack phải chứa các đối số và địa chỉ dòng lệnh phía dưới.
+  - Dùng `call` thì caller phải thủ công push các đối số.
+  - Dùng `invoke` thì sẽ tự động push các đối số ở bên phải lệnh vào stack.
+  - Cả 2 lệnh đều tự động `push [eip+4]` để lưu lại địa chỉ dòng lệnh phía dưới.
+- Trình tự trên stack sẽ là:
+  - Trên cùng là `eip`, các vùng nhờ bên dưới là các đối số.
+  - Dưới cùng là đối số đầu tiên của callee. Mỗi 1 giá trị phía trên sẽ tương ứng với tham số của callee theo thứ tự từ trái sang phải.
 - Khi trả về hàm thì dùng `ret`. `eip` sẽ nhảy về dòng dưới lệnh gọi hàm và tiếp tục thực thi chương trình.
 - Stack được callee làm sạch bằng lệnh `ret`.
