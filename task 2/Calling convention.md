@@ -11,6 +11,7 @@ https://learn.microsoft.com/en-us/cpp/cpp/stdcall?view=msvc-170
 
 - `stdcall` chỉ phổ biến ở kiến trúc x86.
 
+- Ngoài ra trong stdcall thường sử dụng lệnh `ret n` sẽ làm tăng `esp` lên n byte để giải phóng các tham số trên stack. Đây là cách callee làm sạch stack.
 # Trở lại với đoạn code:
 
 ![Capture](https://github.com/user-attachments/assets/682eeb7b-a1ba-4980-ae3a-174295fbbf5e)
@@ -31,11 +32,22 @@ Hàm `main` xuất hiện các lệnh push, pop và call. Như vậy, ta đã th
 
 ![Capture9](https://github.com/user-attachments/assets/af88d33a-eab6-4a90-a283-4b8183e886f9)
 
-Ở stack có chứa các đối số và địa chỉ của dòng lệnh. Vậy là `call` và `invoke` tự động push địa chỉ bên dưới vào stack. Để pop được các đối số, callee phải pop địa chỉ trước tiên. Sử dụng phương pháp tạo stack frame, địa chỉ được giữ lại.
+Có 2 sự thay đổi ta cần quan tâm. 
+- Ở stack có chứa các đối số và địa chỉ của dòng lệnh.
+- Thanh ghi `eax`, `ecx`, `edx`, `eip`, `esp` thay đổi giá trị.
 
-Thanh ghi `eax`, `ecx`, `edx`, `eip`, `esp` thay đổi giá trị.
+Vậy là `call` và `invoke` tự động push `[eip +4]` chứa địa chỉ bên dưới vào stack. 
+
+Vì ta đang bàn luận về calling convention nên em sẽ nói ngắn gọn về cách hoạt động của callee.
+- Callee tạo 1 stack frame để lưu lại địa chỉ trước đó sau đó mới pop các đối số và thực hiện chức năng của hàm.
+- Sau đó giải phóng stack frame và push lại địa chỉ.
+- Lệnh `ret` sẽ làm 2 việc. 1 là `pop eip` để lấy lại địa chỉ trả vể và 2 là tăng `esp`.
+- Giá trị trả về được lưu ở eax.
+
+Với sự thay đổi của thanh ghi, ta có thể suy ra `eax` chứa giá trị trả về `ecx`, `edx` được callee sử dụng và `eip`, `esp` thay đổi để chương trình có thể chạy tiếp. 
 
 ## Tổng kết:
-Caller push lần lượt các đối số lên stack, cuối cùng push địa chỉ dòng lệnh phía dưới lên stack và jump đến c
-allee. Callee pop các đối số đó để làm tham số. Sau khi return, nó trả về giá trị tại eax đồng thời push lại các đối số. Callee jump trở lại caller bằng lệnh ret. Vị trí jump là địa chỉ được lưu trước đó.
-
+- Calling convention được sử dụng là stdcall.
+- Khi sử dụng lệnh `call` hay `invoke` thì trên stack phải chứa các đối số. 2 lệnh sẽ tự động push `eip`.
+- Khi trả về hàm thì dùng `ret`. `eip` sẽ nhảy về dòng dưới lệnh gọi hàm và tiếp tục thực thi chương trình.
+- Stack được callee làm sạch bằng lệnh `ret`.
