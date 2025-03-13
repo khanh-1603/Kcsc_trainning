@@ -1,0 +1,7 @@
+﻿  Assembling asm.asm...
+asm.asm(262): warning A6001: no return from procedure
+asm.asm(262): warning A6004: procedure argument or local not referenced : hInstance
+asm.asm(262): warning A6004: procedure argument or local not referenced : hPrevInstance
+asm.asm(262): warning A6004: procedure argument or local not referenced : lpCmdLine
+asm.asm(262): warning A6004: procedure argument or local not referenced : nCmdShow
+  bài 2.vcxproj -> E:\Task 3\bài 2\code\Debug\bài 2.exe

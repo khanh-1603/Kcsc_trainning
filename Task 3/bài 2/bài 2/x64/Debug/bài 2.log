@@ -1,0 +1,5 @@
+﻿  Assembling asm.asm...
+C:\masm32\include\masm32rt.inc(32): error A2008: syntax error : .
+C:\masm32\include\masm32rt.inc(33): error A2008: syntax error : .
+C:\masm32\include\masm32rt.inc(38): fatal error A1000: cannot open file : \masm32\include\windows.inc
+C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\BuildCustomizations\masm.targets(70,5): error MSB3721: The command "ml64.exe /c /nologo /Zi /Fo"bài 2\x64\Debug\asm.obj" /I "C:\Irvine" /W3 /errorReport:prompt  /Taasm.asm" exited with code 1.
