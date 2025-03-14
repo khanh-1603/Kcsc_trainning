@@ -1,5 +1,21 @@
 # Tính số fibonacci thứ 100
-## Code
+**Nói sơ qua về thuật toán:**
+
+thuật toán như sau:
+```cpp
+d = a            
+a= a + b         
+b = d 
+```
+a là số fibo thứ n, b là số fibo thứ n-1.
+
+Để có số fibo tiếp theo ta cộng a với b nhưng như thế sẽ là mất giá trị cũ của a. Vì thế ta sử dụng d để lưu giá trị cũ của a và gán cho b sau khi cộng.
+
+[Danh sách 100 số fibonacci](https://miniwebtool.com/list-of-fibonacci-numbers/?number=101)
+
+![fibo100](https://hackmd.io/_uploads/By8d2KOoye.png)
+
+Số này quá lớn 3.5x10^20^ khoảng 2^69^. Có nghĩa là cần tới 69 bit để chứa nó nên ta phải tạo 1 vùng nhớ tối thiểu 9 byte.
 ```assembly
 include Irvine32.inc
 
@@ -7,10 +23,15 @@ include Irvine32.inc
 a TBYTE  0		                ; bien 10 byte - 80 bit du de chua fibo100
 b TBYTE  0
 d TBYTE  0
-sochia dw 16	                        ; so 16
-fibo100 db 30 DUP(0)
-byte_trung_gian db 0
+sochia dw 16	                        ; so 16 de chuyen fibo100 sang hex string
+fibo100 db 30 DUP(0)			; hex string
+byte_trung_gian db 0			; bien ho tro dao chuoi
+```
 
+Ta đang dùng `masm x86` nên các lệnh của nó chỉ dành cho 4 byte. Do đó phải thao tác với từng phần của biến 10 byte.
+
+Đầu tiên khởi tạo giá trị a=1, b=0, c=2.
+```
 .code
 main proc
     mov	    ebp, esp
@@ -23,13 +44,18 @@ main proc
     mov	    WORD PTR [b], 0			
     mov	    DWORD PTR [b+2], 0			
     mov	    WORD PTR [b+6], 0
+```
+Sau đó ta sẽ lặp thuật toán cộng.
 
-for_fibo:
-    xor	    eax, eax
+Masm không hỗ trợ cộng trực tiếp các biến nên em lưu giá trị vào thanh ghi rồi mới cộng
+- add là cộng bit bình thường. adc là cộng bit có cộng thêm cờ CF
+```
+    xor	    eax, eax			 ; lam sach cac bien truoc khi cộng 
     xor	    ebx, ebx
     xor	    edx, edx
     lea	    esi, [a]			 ; luu esi = OFFFSET a de xem vi tri a
 
+for_fibo:
     mov	    ax, WORD PTR [a]     	 ; eax = 2 byte dau cua a
     mov	    ebx, DWORD PTR [a+2]	 ; ebx = 4 byte giua cua a
     mov     edx, DWORD PTR [a+6]	 ; edx = 4 byte cuoi cua a
@@ -57,8 +83,21 @@ for_fibo:
     inc	    ecx
     cmp	    ecx, 100
     jle	    for_fibo					
+```
+Khi lặp đủ 98 lần ta được số fibo100
 
-    lea	    esi, [a]			 ; luu esi = OFFFSET a de xem vi tri a
+ Số fibo100
+ 
+![fibo100hex](https://hackmd.io/_uploads/Skfop5dskl.png)
+
+![fibo100dectohex](https://hackmd.io/_uploads/B14oa9ujyx.png)
+
+Việc tiếp theo là in số. Ta không thể in bình thường được vì các lệnh không hỗ trợ biến 10 byte.
+
+Do đó ta cần chuyển số sang dạng string. Em xin phép được chuyển sang dạng hex string vì em không biết cách chuyển sang dạng dec string
+
+Trước khi chuyển em đếm số byte của fibo100
+```
     mov	    BYTE PTR [a+10], 0		 ; dat ket thuc chuoi
     mov	    ecx, 0			 ; phan tu dem
 
@@ -71,7 +110,18 @@ dem_PT:
 
     xor	    ebx, ebx			 ; lam sach ebx
     dec	    ecx				 ; bo phan tu 0
+```
+Thang ghi sẽ lưu theo kiểu little endian: lưu byte thấp trước byte cao sau nên thứ tự chữ số bị đảo lộn theo từng byte.
 
+Thế nên em lấy byte từ cuối lên đầu.
+
+Phương pháp chuyển là chia lấy dư cho 16 sau đó kiểm tra giá trị và gán ký tự phù hợp.
+
+Khi chia bit cao sẽ là phần dư edx, bit thấp là phần thương eax. 
+
+Nếu tạo hàm đổi ký tự cho từng thanh ghi thì hơi mất thời gian nên em chia 1 byte cho 16 2 lần và lưu phần dư vào biến trung gian rồi đảo vị trí.
+
+```
 fibo_hex:
     dec	    ecx
     mov	    al, BYTE PTR [a+ecx]	 ; lay phan tu cuoi
@@ -122,7 +172,9 @@ hexA_F:
 dao_trong_1byte:
     mov	    [byte_trung_gian], dl	 ; luu phan tu cuoi cua byte vao bien trung gian
     jmp	    div_loop
-
+```
+Bước cuối ta chỉ cần gán địa chỉ chuỗi vào edx và in ra
+```
 in_fibo:
     lea	    edx, [fibo100]
     call    WriteString
@@ -132,80 +184,10 @@ in_fibo:
     main    endp
 end main
 ```
-## Giải thích code
-[Danh sách 100 số fibonacci](https://miniwebtool.com/list-of-fibonacci-numbers/?number=101)
-
-![fibo100](https://hackmd.io/_uploads/By8d2KOoye.png)
-### Giải thích đoạn khai báo biến
-```assembly
-.data
-a TBYTE  0                             ; bien 10 byte de chua fibo100
-b TBYTE  0
-d TBYTE  0
-sochia dw 16	                        ; so 16
-fibo100 db 30 DUP(0)
-byte_trung_gian db 0
-```
-- Số này quá lớn 3.5x10^20^ < 2^69^. Có nghĩa là cần tới 69 bit để chứa nó nên ta phải tạo 1 vùng nhớ tối thiểu 9 byte
-- `TBYTE` là khai báo biến 10 byte
-- `sochia` ở dạng int để sau còn chuyển kết quả sang dạng string hex
-- `fibo100` là nơi lưu chuỗi hex
-- `byte_trung_gian` để tách 4 bit của đoạn hex 1 byte
-- 
-### Giải thích thuật toán
-thuật toán như sau:
-```cpp
-// a là fibo thứ n, b là fibo thứ n-1
-d = a            
-a= a + b         
-b = d 
-```
-Ta đang dùng `masm x86` nên các lệnh của nó chỉ dành cho 4 byte. Do đó phải thao tác với từng phần của biến 10 byte.
-
-Khi bị bị tràn thì thanh ghi được sử dụng sẽ chỉ lấy n bit cuối như `ax` sẽ lấy 16 bit, `ebx` lấy 32 bit. Phần trần sẽ không được lưu lại nhưng `cờ CF sẽ = 1`. Ví dụ:
-
-![testoverflow](https://hackmd.io/_uploads/B15zwcdiye.png)  ![testoverflow2](https://hackmd.io/_uploads/B1sGv5OsJl.png)
-- `eax = 0xffffffff` khi cộng với chính nó sẽ ra 0x1fffffffe
-- `eax` đã giữ lại 32 bit cuối -> mất bit thứ 33 là số 1
-
-Vì vậy ta cần sử dụng lệnh `adc` - cộng có nhớ hay cộng với cờ CF
-
-Sau khi tạo được thuật toán ta kiểm tra bằng debug:
-- Số fibonacci thứ 24 là 46368. Đây là giới hạn của thanh ghi ax. Chuyển sang dạng hex là 0xb520
-
-![tràn 1,5](https://hackmd.io/_uploads/rkkfO5Os1x.png)
-
-- Số fibonacci thứ 25 là 75025 ~ 0x12511
-
-![tràn 2,5](https://hackmd.io/_uploads/SydzucOj1l.png)
-:::info
-:information_source:Thang ghi sẽ lưu theo kiểu little endian: lưu byte thấp trước byte cao sau nên thứ tự chữ số bị đảo lộn theo từng byte
-:::
- Code của em đã chính xác.
- 
- ### Giải thích đoạn chuyển sang string
- Khi được số fibo100 ta cần phải in nó ra. Nhưng hàm `WriteDec` sẽ chỉ in số trong eax. Thanh ghi này không đủ lớn nên ta cần chuyển nó thành 1 mảng ký tự.
-
- Số fibo100
- 
-![fibo100hex](https://hackmd.io/_uploads/Skfop5dskl.png)
-
-![fibo100dectohex](https://hackmd.io/_uploads/B14oa9ujyx.png)
-
-Để chuyển sang dạng chuỗi số thì rất phức tạp và em cũng không biết cách làm nên em sẽ chỉ chuyển sang dạng chuỗi hex.
-
-**Hàm fibo_hex:**
-- Ta lấy phần tử của mảng a theo chiều từ phải sang trái.
-- Sau đó chia cho 16. Phần dư sẽ lưu vào edx. 
-    - Nếu edx <10 thì nhảy vào hàm `hex0_9` nơi sẽ chuyển edx sang dạng char từ 0->9
-    - Nếu edx >=10 thì nhảy vào hàm `hexA_F` tương tự hàm `hex0_9`
-    - 2 hàm trên chỉ khác nhau phần cộng để chuyển sang dạng char còn lại y như nhau. 2 Hàm sẽ gán `edx` vào chuỗi fibo100 theo đúng thứ tự.
-    - Cuối 2 hàm, ta kiểm tra xem chuỗi a đã chạy đến hết phần tử đầu chưa. Chưa thì nhảy lên `fibo_hex`.
-    - Hàm `đảo_trong_1byte` đơn giản là lưu lại 4 bit cuối của 1 byte để thêm vào chuỗi fibo100 cho đúng thứ tự
-
 **Kết quả:**
 
  ![Capture](https://hackmd.io/_uploads/SytSg8YoJe.png)
+ ![fibo100dectohex](https://hackmd.io/_uploads/B14oa9ujyx.png)
 
 # Tạo 1 cửa sổ chứa 2 text box, 1 input, 1 output với chuỗi lộn ngược
 
@@ -501,6 +483,13 @@ defaultwindow:
     ret
 WndProc endp
 ```
+Luồng chương trình như sau:
+
+Tạo cửa sổ cha có sử dụng lớp cửa sổ do em đăng ký. Lớp này có trỏ đến hàm `WndProc`. Nếu hàm này code lỗi thì cửa sổ sẽ không được tạo. 
+
+Sau khi ta thao tác với cửa sổ con (textbox input hay nút) thì `GetMessage` sẽ lấy thông điệp, `TranslateMessage` sẽ chuyển thông điệp bàn phím sang thông diệp ký tự.
+`DispatchMessage` sẽ chuyển thông điệp này đến `WndProc` và hàm này xử lý các thông điệp đó. `Messageloop` sẽ loop vô tận nếu ta không bấm `cancel`.
+
 Kết quả:
 
 ![Capture1](https://github.com/user-attachments/assets/9f699afa-f674-4e55-a09a-711731c81165)
