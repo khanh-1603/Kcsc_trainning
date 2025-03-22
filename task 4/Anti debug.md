@@ -521,9 +521,6 @@ Tương tự như các tricks ở trên.
 Cách phát hiện debug ở các tricks này cũng sẽ chỉ phát hiện độ trễ nếu debugger có đặt breakpoint hay steptrace.
 
 ## [5. Process Memory:](https://anti-debug.checkpoint.com/techniques/process-memory.html)
-
-**Khó quá em không code assembly được**
-
 Kỹ thuật chính là Detect Breakpoints và một số Memory check khác
 
 ### 5.1. Breakpoints
@@ -578,10 +575,13 @@ bool IsDebugged()
     - Dùng `CheckForSpecificByte()` để kiểm tra sự có mặt của byte 0xCC.
     - Nếu có thì trả về true -> có breakpoints -> có debug. Ngược lại trả về false.
 
+**Cách này không ổn khi chuyển sang masm vì độ dài 1 dòng lệnh không cố định. Việc duyệt từng byte không phải duyệt từng dòng. Do đó sẽ có trường hợp có byte `0xC3` nhưng không phải lệnh `RET`**
+
 #### 5.1.2. Anti-Step-Over
 Debugger cho phép bạn bỏ qua lệnh gọi hàm. Trong trường hợp như vậy, debugger sẽ ngầm đặt Software Breakpoint trên lệnh theo sau lệnh gọi (tức là địa chỉ trả về của hàm được gọi).
 
 Để phát hiện xem debugger có cố gắng vượt qua hàm hay không, chúng ta có thể kiểm tra byte bộ nhớ đầu tiên tại địa chỉ trả về. Nếu `software breakpoint` ( 0xCC ) nằm ở địa chỉ trả về, chúng ta có thể patch nó bằng một số câu lệnh khác (ví dụ NOP ). Rất có thể nó sẽ phá mã và làm hỏng quá trình. Mặt khác, chúng ta có thể patch địa chỉ trả về bằng một số câu lệnh có ý nghĩa thay vì NOP và thay đổi luồng điều khiển của chương trình.
+
 #### 5.1.3. Hardware Breakpoint
 Các thanh ghi gỡ lỗi DR0, DR1, DR2 và DR3 có thể được truy xuất từ `thread context`. Nếu chúng chứa các giá trị khác 0, điều đó có thể có nghĩa là tiến trình được thực thi bằng debugger và 1 `hardware breakpoint` đã được đặt.
 
@@ -605,6 +605,84 @@ bool IsDebugged()
 - `GetCurrentThread()`: Lấy handle của thread hiện tại.
 - `GetThreadContext()`: Lấy thông tin trạng thái CPU của thread hiện tại.
 - Nếu `GetThreadContext()` thất bại → Trả về false (không bị Debug). Ngược lại nếu bất kỳ thanh ghi Debug nào (Dr0 - Dr3) khác 0, nghĩa là Debugger đã đặt Hardware Breakpoint → Trả về true (bị Debug).
+
+Code assembly
+```asm
+include C:\masm32\include\masm32rt.inc
+
+.data
+ ctx CONTEXT <>
+ msg  db "Debugging?", 0
+msg1 db "Khong bi debug", 0
+msg2 db "Dang bi debug" , 0
+
+.code
+main proc
+    mov eax, 100
+    add eax, 100
+    sub eax, 100
+    xor eax,eax
+
+    push sizeof ctx                
+    push 0
+    push offset ctx
+    call crt_memset                 ; ZeroMemory
+
+    mov ctx.ContextFlags, CONTEXT_DEBUG_REGISTERS
+    call GetCurrentThread
+
+    push eax
+    call GetThreadContext
+
+    test eax, eax
+    jz return_false              ; that bai -> tra ve false
+
+    mov eax, ctx.iDr0            ; lay Dr0
+    or  eax, ctx.iDr1            ; or voi cac thanh ghi con lai
+    or  eax, ctx.iDr2            ; chi can 1 thanh ghi khac 0 la co debug
+    or  eax, ctx.iDr3
+
+    test eax, eax                ; ca 4 thanh ghi deu = 0
+    jz return_false              ; neu tat ca = 0 -> false 
+
+    mov eax, 1   ; tra ve true
+    add esp, 4
+    jmp being_debugged
+
+return_false:
+    mov eax, 0
+    add esp, 4
+
+
+not_debugged:
+    push 0
+    push offset msg
+    push offset msg1
+    push 0
+    call MessageBoxA
+
+    push 0
+    call ExitProcess
+
+being_debugged:
+    push 0
+    push offset msg
+    push offset msg2
+    push 0
+    call MessageBoxA
+
+    push 1
+    call ExitProcess
+main endp 
+end main 
+```
+![Khong bi debug](https://github.com/user-attachments/assets/770189a0-7482-45ff-aa4e-79986e2f8194)
+
+Khi chạy trên `VS code`
+
+![dang bi debug](https://github.com/user-attachments/assets/b7479e52-0bcd-4621-9726-ad65e04e8da5)
+
+Khi đặt 1 `hardware breakpoint` trên `ida`
 
 ### 5.2. Một số kỹ thuật kiểm tra bộ nhớ khác.
 Phần này chứa các kỹ thuật trực tiếp kiểm tra hoặc thao tác bộ nhớ ảo của các tiến trình đang chạy để phát hiện hoặc ngăn chặn debug.
