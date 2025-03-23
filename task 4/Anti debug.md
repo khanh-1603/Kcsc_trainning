@@ -726,49 +726,49 @@ include C:\masm32\include\masm32rt.inc
 msg  db "Debugging?", 0
 msg1 db "Khong bi debug", 0
 msg2 db "Dang bi debug" , 0
-
+ctx CONTEXT <>
 .code
+
+ assume fs:nothing                   ; tranh loi use of register assum to ERROR
+
 IsDebugged proc
     push ebp
     mov ebp, esp
-    pushad              ; luu tat ca thanh ghi
+    pushad                            ; luu tat ca thanh ghi
 
 ; Dang ky exception handler vao FS:[0] de window xu ly
-    assume fs:nothing                   ; tranh loi use of register assum to ERROR
-    push dword ptr FS:[0]
-    push offset exception_handler       ; dia chi ham de window xu ly loi
-    mov FS:[0], esp
 
-    int 3                                ; gay exception bang INT 3
+    xor eax, eax                                        ; dat eax = 0
+    push offset SEH_handler                             ; dia chi xu ly exception
+    push fs: [eax]                                      ; handle cu
+    mov fs: [eax], esp                                  ; dang ky ham xu ly exception moi
 
-    mov eax, 1                           ; neu khong bi bat tra ve true
-    jmp cleanup
+    int 3                                               ; gay exception bang INT 3
 
-exception_handler:
-    mov eax, dword ptr [esp + 8]         ; lay ExceptionRecord
-    cmp dword ptr [eax], 80000003h       ; kiem tra co phai loi INT3 khong
-    jne continue_exception
+    ;jmp debugged                                       ; neu khong bi bat tra ve true
 
-    mov eax, 0                           ; neu dung tra ve false
-    jmp cleanup
+SEH_handler:
+    mov esi, [esp + 0Ch]                      ;  lay con tro ngu canh
+    assume esi: PTR CONTEXT
+    mov eax, dword ptr [esp + 4]            ; lay exceptionRecord
+    cmp dword ptr [eax], 80000003h          ; kiem tra loi int 3
+    jne debugged                            ; khong phai loi int 3 coi nhu khong phai debug
 
-continue_exception:
-    mov eax, dword ptr [esp+4]           ; khoi phuc handler cu tu stack
-    mov dword ptr [esp+16], eax
-    mov dword ptr [esp + 12], eax
-    mov eax, EXCEPTION_CONTINUE_SEARCH
-    jmp done
+    mov [esi].regEip, offset not_debugged   ;  nhay qua int 3 neu khong bi debug
 
-cleanup:
-    pop dword ptr FS:[0]                 ; khoi phuc exception handler cu
+not_debugged:
+    pop dword ptr FS:[0]  ; khoi phuc SEH cu
     add esp, 4
-
-    popad                               ; phuc hoi thanh ghi
+    popad
+    mov eax, 0            ; khong co debug -> tra ve 0
     pop ebp
     ret
 
-done:
+debugged:
+    pop dword ptr FS:[0]  ; Khoi phuc SEH cu
+    add esp, 4
     popad
+    mov eax, 1            ; co debug -> tra ve 1
     pop ebp
     ret
 IsDebugged endp
