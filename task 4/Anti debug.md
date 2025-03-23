@@ -813,7 +813,8 @@ end main
 
 ![Khong bi debug](https://github.com/user-attachments/assets/20c6f548-68fb-492c-97c2-9ba025377c2e)
 
-  
+**Khi chạy masm32 trên window 64-bit thì window nó chặn không cho truy cập vào SEH. Do đó cách này không khả thi. Em xin phép bỏ qua code mục 6**
+
 ### 6.2. INT 2D
 
 Giống với `INT3` thì `INT 2D` cũng tạo `EXCEPTION_BREAKPOINT` VÀ `EXCEPTION HANDLER` sẽ được gọi.
