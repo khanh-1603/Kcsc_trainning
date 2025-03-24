@@ -878,90 +878,6 @@ Có ít nhất 3 hàm có thể đính kèm như 1 debugger vào 1 tiến trình
 
 Vì chỉ có thể gắn một debugger vào một tiến trình tại một thời điểm, việc không thể đính kèm debugger vào tiến trình có thể cho thấy sự hiện diện của một debugger khác.
 
-Code assembly
-```asm
-include C:\masm32\include\masm32rt.inc
-include C:\masm32\include\ntdll.inc
-includelib C:\masm32\lib\ntdll.lib
-
-.data
-msg  db "Debugging?", 0
-msg1 db "Khong bi debug", 0
-msg2 db "Dang bi debug" , 0
-
-.code
-AntiDebug proc
-    push ebp
-    mov ebp, esp
-    sub esp, 4            
-    call GetCurrentProcessId    ; lay ID
-    push eax
-    push 0
-    push 0400h                ; PROCESS_QUERY_INFORMATION
-    call OpenProcess
-
-    push eax
-    call GetLastError
-
-    mov [ebp-4], eax
-
-    push eax
-    call NtDebugActiveProcess
-    test eax, eax         ; neu tra ve 0 (STATUS_SUCCESS) tuc la ko bi debug
-    jnz detected
-    jmp cleanup
-
-detected:
-    mov eax, 1            ; neu bi debug, tra ve 1
-    ret
-
-cleanup:
-    push [ebp-4]
-    call CloseHandle       ; dong handle process
-    mov eax, 0
-    ret
-AntiDebug endp
-
-
-main proc
-    mov eax, 6          ;code linh tinh
-    call AntiDebug
-    test eax, eax
-    jnz being_debugged
-
-not_debugged:
-    push 0
-    push offset msg
-    push offset msg1
-    push 0
-    call MessageBoxA
-
-thoat:
-    push 0
-    call ExitProcess
-
-being_debugged:
-    push 0
-    push offset msg
-    push offset msg2
-    push 0
-    call MessageBoxA
-
-thoat_voi_loi:
-    push 1
-    call ExitProcess
-main endp
-end main
-```
-**Em bị lỗi nên không chạy được**
-
-![Capture](https://github.com/user-attachments/assets/94dbd2ef-0ab8-45d9-8875-bc8eaa293c00)
-
-Khi debug
-
-![dang bi debug](https://github.com/user-attachments/assets/df2aee46-eeb2-45ae-b716-f6c6a8cef1b3)
-
-
 ### 7.2. BlockInput()
 Hàm `user32!BlockInput()` có thể chặn tất cả chuột và bàn phím, đây là một cách khá hiệu quả để tắt debugger. Ở Window Vistas và cao hơn thì khi call cần có quyền admin.
 
@@ -1002,6 +918,87 @@ bool AntiDebug()
 }
 ```
 - `NtSetInformationThread()`: Là một hàm của dùng để thay đổi thuộc tính của một luồng. Khi có `ThreadHideFromDebugger` (Giá trị 0x11) luồng hiện tại sẽ bị ẩn khỏi debug.
+
+Code assembly
+```asm
+include C:\masm32\include\masm32rt.inc
+include C:\masm32\include\ntdll.inc
+includelib C:\masm32\lib\ntdll.lib
+
+
+.data
+msg  db "Debugging?", 0
+msg1 db "Khong bi debug", 0
+msg2 db "Dang bi debug" , 0
+
+.code
+AntiDebug proc
+    push ebp
+    mov ebp, esp
+
+    call GetCurrentThreadId
+    push eax
+    push 0
+    push THREAD_SET_INFORMATION
+    call OpenThread
+    mov esi, eax
+
+    push 0                    ; Length = 0
+    push 0                    ; ThreadInformation = NULL
+    push 11h                   ; THREAD_INFORMATION_CLASS = 0x11 (ThreadHideFromDebugger)
+    push esi                   ; thread handle
+    call ZwSetInformationThread 
+    
+    mov ebx, eax
+    push esi
+    call CloseHandle
+
+    mov eax, 0
+    cmp ebx, 0
+    je success
+    
+    mov eax, 1
+    success:
+    pop ebp
+    ret
+AntiDebug endp
+
+
+main proc
+    mov eax, 6          ;code linh tinh
+    call AntiDebug
+    test eax, eax
+    jz being_debugged
+
+not_debugged:
+    push 0
+    push offset msg
+    push offset msg1
+    push 0
+    call MessageBoxA
+
+thoat:
+    push 0
+    call ExitProcess
+
+being_debugged:
+    push 0
+    push offset msg
+    push offset msg2
+    push 0
+    call MessageBoxA
+
+thoat_voi_loi:
+    push 1
+    call ExitProcess
+main endp
+end main
+```
+![Khong bi debug](https://github.com/user-attachments/assets/93e51fcd-dee8-4f9d-a368-66cebccf97ea)
+
+Khi `step over` dòng `call NtSetInformationThread` thì em bị ngừng debug lại. Còn khi dùng `call ZwSetInformationThread` Thì nó báo lỗi ngay khi đi qua. Có vẻ nó đã chặn thành công.
+
+![dang bi debug](https://github.com/user-attachments/assets/4edddffe-1aa7-4c92-90eb-aef75dd19509)
 
 ## 8. MISC
 
