@@ -1043,6 +1043,113 @@ bool IsDebugged()
     - Nếu không tìm thấy → Trả về NULL.
 - Lặp liên tục. Nếu tìm thấy cửa sổ của trình debug -> trả về `true`. Ngược lại trả về `false`.
 
+Code assembly
+```asm
+include C:\masm32\include\masm32rt.inc
+
+.data
+    msg db "Debug Class: ", 0
+    msg_not_found db "Khong tim thay cua so", 0
+    msg1 db "Khong bi debug", 0
+    msg2 db "debugged", 0
+    msg_title db "Debugging ?", 0
+
+    vWindowClasses db "idawindow", 0,
+                      "Qt5QWindowIcon", 0,
+                      "IDAWIN", 0,
+                     0  ; ket thuc
+
+.code
+FindDebugWindows proc
+    pushad
+    lea esi, vWindowClasses                 ;offset dau danh sach
+
+check_class:
+    cmp byte ptr [esi], 0                   ; kiem tra ket thuc danh sach
+    je no_debug_found
+
+    push 0                                  ; window title (NULL)   
+    push esi                                ; class name
+    call FindWindowA
+    
+    test eax, eax                           ; tra ve 0 neu khong tim thay
+    jnz debug_found
+
+    xor eax, eax                            ; eax = null
+find_next_class:
+    cmp byte ptr [esi], al                  ; kiem tra tung byte voi null
+    je found_end_of_class                   ; thay thi ket thuc lap
+
+    inc esi                                 ; tang offset
+    jmp find_next_class
+
+found_end_of_class:
+    inc esi                                 ; nhay qua ky tu null
+    jmp check_class
+
+debug_found:
+    push 0
+    push offset msg
+    push esi                                ; offset classname
+    push 0
+    call MessageBoxA
+    
+    popad
+    mov eax, 1
+    ret
+
+no_debug_found:
+    push 0
+    push offset msg
+    push offset msg_not_found               ; khong co cua so
+    push 0
+    call MessageBoxA
+
+    popad
+    mov eax, 0
+    ret
+FindDebugWindows endp
+
+main proc
+    call FindDebugWindows
+    test eax, eax                          ; tra ve 0 la khong co debug
+    jnz debugged
+    
+    push 0
+    push offset msg_title
+    push offset msg1                       ; khong bi debug
+    push 0
+    call MessageBoxA
+    jmp thoat
+
+debugged:
+    push 0
+    push offset msg_title
+    push offset msg2                       ; bi debug
+    push 0
+    call MessageBoxA
+
+thoat:
+    push 0
+    call ExitProcess
+main endp
+end main
+```
+
+Em tiện thể tìm luôn cửa sổ debug của ida.
+Kết quả:
+
+![ko cua so debug](https://github.com/user-attachments/assets/37bdb5ab-1048-4f7e-bd9d-c3421060bc2c)
+
+![Khong bi debug](https://github.com/user-attachments/assets/84ddb900-ec1c-4c8f-87df-6d2d9cb11137)
+
+Khi dùng `VS code`.
+
+![cua so debug](https://github.com/user-attachments/assets/14c98034-52be-472e-97a0-1ef6bafbdd02)
+
+![dang bi debug](https://github.com/user-attachments/assets/8c423b4f-8c49-4b81-9f3d-45322598020c)
+
+Khi dùng `ida`.
 ### 8.2. DbgPrint()
 Các hàm debug như `ntdll!DbgPrint()` và `kernel32!OutputDebugStringW()` gây ra `DBG_PRINTEXCEPTION_C` (0x40010006). Nếu một chương trình được thực thi với debugger đính kèm thì debugger sẽ xử lý exception này. Nhưng nếu không có debugger và `exceptions handler` được bật, thì exceptions này sẽ bị `exceptions handler` bắt.
 
@@ -1066,96 +1173,3 @@ bool IsDebugged()
 
 - Nếu không có debugger, ngoại lệ này sẽ đi vào `__except`.
 - Nếu `GetExceptionCode()` trả về `DBG_PRINTEXCEPTION_C`, có nghĩa là ngoại lệ không bị bắt bởi debugger → Không bị debug → Trả về `false`. Ngược lại trả về `true`.
-
-Code assembly
-```asm
-include C:\masm32\include\masm32rt.inc
-include C:\masm32\include\ntdll.inc
-includelib C:\masm32\lib\ntdll.lib
-
-.data
-msg  db "Debugging?", 0
-msg1 db "Khong bi debug", 0
-msg2 db "Dang bi debug", 0
-DBG_PRINTEXCEPTION_C equ 40010006h
-
-.code
-IsDebugged proc
-    assume fs:nothing
-    push ebp
-    mov ebp, esp
-    sub esp, 4
-
-    mov eax, fs:[0]                  ; lay gia tri cua FS:[0] 
-    push eax                         ; Luu vao stack
-    push offset exception_handler    ; dang ky handle moi
-    mov fs:[0], esp
-
-    push 0
-    push 0
-    push 0
-    push DBG_PRINTEXCEPTION_C
-    call RaiseException            ; gay exception
-
-    mov eax, 1                     ; neu chay toi day la co debug
-    jmp cleanup
-
-exception_handler:
-    mov eax, dword ptr [esp + 4]   ; lay dia chi ExceptionRecord
-    mov eax, dword ptr [eax]       ; lay ExceptionCode
-    cmp eax, DBG_PRINTEXCEPTION_C
-    jne continue_exception
-
-    mov eax, 0                     ; khong co debugger
-    jmp cleanup
-
-continue_exception:
-    mov eax, EXCEPTION_CONTINUE_SEARCH
-    jmp done
-
-cleanup:
-    pop dword ptr fs:[0]           ; khoi phuc handler cu
-
-done:
-    mov esp, ebp
-    pop ebp
-    ret
-IsDebugged endp
-
-main proc
-    call IsDebugged
-    test eax, eax
-    jnz being_debugged
-
-not_debugged:
-    push 0
-    push offset msg
-    push offset msg1
-    push 0
-    call MessageBoxA
-
-    push 0
-    call ExitProcess
-
-being_debugged:
-    push 0
-    push offset msg
-    push offset msg2
-    push 0
-    call MessageBoxA
-
-    push 1
-    call ExitProcess
-main endp
-end main
-```
-
-Em run bị lỗi nhưng debug lại không sao
-
-![Khong bi debug](https://hackmd.io/_uploads/rJtRPcs3yl.png)
-
-Lỗi khi run
-
-![dang bi debug](https://hackmd.io/_uploads/Hk20v5onJl.png)
-
-Khi debug
