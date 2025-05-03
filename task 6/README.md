@@ -7,7 +7,6 @@
 
 ![image](https://hackmd.io/_uploads/r1-wwkKCJx.png)
 
-
 Hàm đầu là đếm số byte của main. Kết thúc khi chạy đến 0xC3 (ret).
 
 ![image](https://hackmd.io/_uploads/Hkfdv1Y0kg.png)
@@ -21,7 +20,6 @@ Hàm main có chứa byte `0xcc` nên hàm antidebug không ảnh hưởng đế
 ![image](https://hackmd.io/_uploads/rk8bAlKA1l.png) ![image](https://hackmd.io/_uploads/HkjGCeFAkl.png)
 
 Đây là `v7` ở main. Giá trị không đổi.
-
 Em xác định được hàm bên dưới là mã hóa RC4.
 
 ![image](https://hackmd.io/_uploads/HJS9KJY01l.png)
@@ -32,7 +30,8 @@ Hàm này cũng tìm `software breakpoint` và tạo key dựa trên kết quả
 
 Hàm RC4 không có byte `0xcc` nên antidebug có ảnh hưởng đến hàm này.
 
-Để bypass đầu tiên ta nhảy đến lệnh gọi hàm antidebug.
+Để bypass đầu tiên ta nhảy đến lệnh gọi hàm antidebug và truy cập nó.
+
 ![image](https://hackmd.io/_uploads/ryD1JbF0kx.png)
 
 ![image](https://hackmd.io/_uploads/ryNMkbYA1l.png)
@@ -41,6 +40,7 @@ Hàm RC4 không có byte `0xcc` nên antidebug có ảnh hưởng đến hàm n�
 Hàm này có 2 giá trị. nếu có `software breakpoint` thì` mov eax, 13h`. Nên ta chỉ cần `set ip` sang bên `mov eax, 37h` là xong.
 
 ![image](https://hackmd.io/_uploads/HJpQ-bFRJx.png)
+
 Ta tìm được key là DEADBF33
 
 `for` đầu là tạo s-box và tạo key
@@ -140,7 +140,7 @@ Rút gọn lại.
 
 ![image](https://hackmd.io/_uploads/By5aVYRAkl.png)
 
-Ta tập trung vào hàm `for` dưới cùng.
+Ta tập trung vào vòng lặp `for` dưới cùng.
 Nếu lần lượt 8 byte `buffer` khác `buf2` thì sai.
 
 `Buf2` dài 48 byte.
@@ -155,6 +155,7 @@ Tính j max:
 Trước đó `buffer` tham gia vào 1 hàm khác.
 
 ![image](https://hackmd.io/_uploads/ryfy3GY0Je.png)
+
 Hàm này lấy 8 byte `buffer`.
 
 Sau `if` `buffer` và `buf2` sẽ tăng 8 byte.
@@ -170,6 +171,7 @@ Trong đó `v11` là 1 mảng 4 byte có 4 phần tử:
 - v11[1] = 0x70753965 (e9up)
 - v11[2] = 0x6B464266 (fBFk)
 - v11[3] = 0x4C304F6B (kO0L)
+
 `v11[0] + v11[1] = 0xBBE19DBB`
 `v11[2] + v11[3] = 0xB77691D1`
 
@@ -178,12 +180,19 @@ Trong đó `v11` là 1 mảng 4 byte có 4 phần tử:
 Yêu cầu sau hàm sub thì `buffer = buf2`
 
 Vậy nên ta xor `buf2` với `v11`. Đổi buf2 theo thứ tự little endian:
+
  `19 2C 30 2A 79 F9 54 02` -> `0x2A302C19, 0x0254F979`
+
  `B3 A9 6C D6 91 80 95 04` -> `0xD66CA9B3, 0x04958091`
+ 
  `29 59 E8 A3 0F 79 BD 86` -> `0xA3E85929, 0x86BD790F`
+ 
  `AF 05 13 6C FE 75 DB 2B` -> `0x6C1305AF, 0x2BDB75FE`
+ 
  `AE E0 F0 5D 88 4B 86 89` -> `0x5DF0E0AE, 0x89864B88`
+ 
  `33 66 AC 45 9A 6C 78 A6` -> `0x45AC6633, 0xA6786C9A`
+ 
  Làm lần lượt từng dòng được
  
  ```c
@@ -218,6 +227,7 @@ return 0;
 Tuy nhiên nó trả về dãy hex không dịch được. Có thể có `anti debug`. `main` không có hàm `anti debug` nào. Nhưng trong danh sách hàm có `TlsCallback`. 
 
 ![image](https://hackmd.io/_uploads/BycUnkZJle.png)
+
 Hàm này có `WriteProcessMemory` có tác dụng ghi dữ liệu vào không gian bộ nhớ của 1 tiến trình khác. Có nghĩa là nó sẽ thay đổi opcode.
 
 ![image](https://hackmd.io/_uploads/HkwfaJWyee.png)
@@ -326,9 +336,11 @@ flag: PTITCTF{bdc90e23aa0415e94d0ac46a938efcf3} (em thay lại không đúng)
 Chạy thử thì xuất hiện lỗi chia cho 0.
 
 ![image](https://hackmd.io/_uploads/Byy1OMqygg.png)
+
 Khi gặp lỗi thì sẽ nhảy vào hàm này.
 
 ### Disassembly
+
 ![image](https://hackmd.io/_uploads/Byev_M5ylg.png)
 
 Xuất hiện dòng đỏ. Là kỹ thuật Anti disassembly. Ở đây do cùng nhảy vào loc_4013CD+1 nên có thể có byte thừa. Ta undefine nó.
@@ -340,21 +352,28 @@ Byte `0E8h` là byte thừa vì đoạn trên nhảy qua nó. Ta bôi đen và b
 ![image](https://hackmd.io/_uploads/SJjsFfqJgg.png)
 
 ![image](https://hackmd.io/_uploads/r1G-qzcyll.png)
+
 Ngay dưới ta xuất hiện dòng này. Chỉ có `e8` và `e9` là byte thừa. Dòng này chưa được code nên ta code nó (bấm c).
+
 ![image](https://hackmd.io/_uploads/BkPj9Gq1ex.png)
 
 Tiếp tục truy tìm.
 
 ![image](https://hackmd.io/_uploads/S1Ywof5Jxl.png)
+
 Đầu tiên undefine đoạn data ở dưới. 
 Ta thấy đoạn `jz` luôn nhảy do có `xor eax, eax`(cờ ZF = 1). Hơn nữa địa chỉ nhảy là `loc +2`. Tuy nhiên địa chỉ đó không xuất hiện (từ 133a -> 133e). Ta phải undefine nó.
 
 ![image](https://hackmd.io/_uploads/H1lfrhzqyge.png)
+
 Đã có 133c. Ta code đoạn này được.
+
 ![image](https://hackmd.io/_uploads/Hk0YnGcyle.png)
+
 Tiếp tục code đoạn data ở dưới. Đoạn trên sửa thành `nop` do bị nhảy qua nên không có tác dụng.
 
 ![image](https://hackmd.io/_uploads/BycGTfc1ee.png)
+
 CODE XREF chuyển xanh -> đúng. sửa e8 -> nop.
 Đã tìm hết.
 
@@ -363,8 +382,8 @@ Nếu chưa compile được là do chưa có biến. Ta chỉ cần chọn dòn
 
 ### bắt đầu debug.
 
-
 ![image](https://hackmd.io/_uploads/Bkio0fcJge.png)
+
 4 dòng đầu là để kiểm tra `software breakpoint` (0xCC) và kiểm tra debug (Beingdebug). 
 
 ![image](https://hackmd.io/_uploads/S1QX17qyel.png)
@@ -374,6 +393,7 @@ v4 ~ `[ebp + var_c]` Nếu nó = 1 thì `1 ^ 0xCD = 0xCC` nên ta sửa jz ở �
 Tiếp tục sửa đoạn `v3->beingdebug ^ 0xAB` là dòng xanh. Sửa `xor eax, 0ABh` -> `mov eax, 0ABh`. Như vậy dù có debug hay không giá trị luôn là `0ABh`.
 
 ![image](https://hackmd.io/_uploads/BkS6x75kgx.png)
+
 Sửa 1 số hàm với biến cho dễ đọc.
 
 ![image](https://hackmd.io/_uploads/r1wdNQckge.png)
@@ -384,43 +404,55 @@ Sửa 1 số hàm với biến cho dễ đọc.
 ![image](https://hackmd.io/_uploads/H1vDbX5klx.png)
 
 Hàm này kiểm tra khoảng cách giữa 2 hàm. Nếu ta patch sai thì đoạn này ta sẽ sai.
+
 Ngoài ra còn tìm từng byte của hàm `sub_401330`. Nếu có `0xcc` thì thoát for (`0x55 ^ 153 = 0xcc`).
+
 Vì mục đích của ta là không để nó phát hiên debug nên mặc định là chạy for không gặp lỗi. Khi đó i = v1. 
+
 => Sửa return -> `return 48879`.
+
 ![image](https://hackmd.io/_uploads/rJ5Of79kxe.png)
 ![image](https://hackmd.io/_uploads/rki9fm9Jgl.png)
 ![image](https://hackmd.io/_uploads/rkijGXcyll.png)
 
 Trở về main
+
 ![image](https://hackmd.io/_uploads/ryRCVQc1lx.png)
 
 đoạn dưới là xor 17 phần tử đầu của buffer với 1. Tạm thời bỏ qua.
 
 kiểm tra biến unk và hàm sub
+
 ![image](https://hackmd.io/_uploads/r1vYDZGgxx.png)
+
 Tham số của `sub_401460` là `(int)00D24652` (offset unk). 
 
 ![image](https://hackmd.io/_uploads/B1oFQ79kxg.png)
 
 Ta sẽ nhìn qua từng hàm sub
+
 ![image](https://hackmd.io/_uploads/HJQWBm9klx.png)
+
 ![image](https://hackmd.io/_uploads/BJsR_bMgxg.png)
+
 4 byte là offset unk.
 
 ![image](https://hackmd.io/_uploads/BkiUFWMgel.png)
+
 4 byte lưu địa chỉ chứa offset unk
 
 a1 là 0xcdd10:0xd24652. (con trỏ 2 chiều sẽ trỏ vào unk).
+
 Đơn giản hóa:
 ```c
 void sub_101330(int **unk) {
     for (int i = 0; i < 8; ++i)
-        ((char *)*unk)[i] ^= 0xAB;
+        unk[i] ^= 0xAB;
 
     *unk += 9;  // dịch con trỏ lên 9 byte
 
     for (int j = 0; j < 12; ++j)
-        ((char *)*unk)[j] = ((2 * ((char *)*unk)[j]) | 1) ^ (j + 0xCD);
+        unk[j] = ((2 * ((char *)*unk)[j]) | 1) ^ (j + 0xCD);
 
     *unk += 13; // dịch tiếp 13 byte
 }
@@ -441,19 +473,19 @@ void sub_101330(int **unk) {
 ![image](https://hackmd.io/_uploads/rJiJdD1lxx.png)
 
 `xor *(short*)unk[2n] với 0xBEEF.`
-Có thể hiểu là lấy 2 byte đầu của `offset unk` ^ 0xBEEF.
+Có thể hiểu là lấy 2 byte đầu của `offset unk` ^ giá trị trả về của hàm `0xBEEF` (hàm mà ta sửa return thành 48879 = BEEFh ).
 
 ![image](https://hackmd.io/_uploads/ryjREIMexx.png)
 
-Hàm cuối lại tăng địa chỉ lên 19.
 ![image](https://hackmd.io/_uploads/r1LhmQ5yge.png)
 ![image](https://hackmd.io/_uploads/BJksnw1xlg.png)
 
-Có vẻ là hàm này.
 Hàm này gây `exception` để break debug. Em tìm được ở giá trị trả về có chứa cờ.
 
 ![image](https://hackmd.io/_uploads/BkFPSX5Jll.png)
+
 byte_404118: (100 byte)
+
 `74 6F 69 35 4F 65 6D 32 32 79 42 32 71 55 68 31 6F
 5F DB CE C9 EF CE C9 FE 92 5F 10 27 BC 09 0E 17 BA 4D 18 0F BE AB 5F 9C 8E A9 89 98 8A 9D 8D D7 CC DC 8A A4 CE DF 8F 81 89 5F 69 37 1D 46 46 5F 5E 7D 8A F3 5F 59 01 57 67 06 41 78 01 65 2D 7B 0E 57 03 68 5D 07 69 23 55 37 60 14 7E 1D 2F 62 5F 62 5F`
 
@@ -462,10 +494,12 @@ Hàm này so sánh 100 ký tự flag_buffer với dãy trên. Nếu bằng hết
 ![image](https://hackmd.io/_uploads/ryHvRbq1ll.png)
 
 Trước đó buffer xor 17 phần tử đầu với 1. Để tìm 17 phần tử của flag thì ta xor 17 phần tử đầu của chuỗi trên với 1 được:
+
 `75 6e 68 34 4e 64 6c 33 33 78 43 33 70 54 69 30 6e` = `unh4Ndl33xC3pTi0n`
 
 83 byte bên dưới là đoạn đã được mã hóa ở trên. Cho đến hiện tại tổng số byte được mã hóa là:
-`00 AB AB AB AB AB AB AB AB 00 CC CF CE D1 D0 D3 D2 D5 D4 D7 D6 D9 00 EF BE EF BE EF BE EF BE EF BE EF BE EF BE EF BE EF BE` (21).
+
+`00 AB AB AB AB AB AB AB AB 00 CC CF CE D1 D0 D3 D2 D5 D4 D7 D6 D9 00 EF BE EF BE EF BE EF BE EF BE EF BE EF BE EF BE EF BE` (21 byte).
 
 
 Để debug được hàm này ta sẽ sửa `int 3` và `2d` thành `nop`. Sau đó sửa jmp sao cho nhảy vào khối `_except`.
@@ -473,32 +507,45 @@ Trước đó buffer xor 17 phần tử đầu với 1. Để tìm 17 phần t�
 ![image](https://hackmd.io/_uploads/HkWIyMzxll.png)
 
 ![image](https://hackmd.io/_uploads/B1vR7MGlxe.png)
+
 Sau khi qua 2 dòng trên ta được:
+
 ![image](https://hackmd.io/_uploads/rypUvLfgee.png)
 
+Kiểm tra hàm `sub` bên dưới:
 
 ![image](https://hackmd.io/_uploads/HydkHMGxgg.png)
+
 Đoạn này mã hóa 30 dòng từ:
+
 ![image](https://hackmd.io/_uploads/rJ9CULGxlg.png)
 
 Thuật toán là xor 2 byte kề nhau nhưng chúng vốn bằng 0 nên không có thay đổi. Có thể em làm sai chỗ nào rồi.
 
 Hàm cuối cùng
+
 ![image](https://hackmd.io/_uploads/B1jvBzGgee.png)
+
 ![image](https://hackmd.io/_uploads/BJJ0HGzgxg.png)
 
 00 AB AB AB AB AB AB 55 A7 C0 23 CF CE D1 D0 D3 D2 D5 D4 D7 D6 D9 00 EF BE EF BE EF BE EF BE EF BE EF BE EF BE EF BE EF BE 00 00 00 00 00 00 00 37 13 FE C0 00 00 ... 00.
 
 Đây là toàn bộ thay đổi trên data gồm 52 byte.
 Có vẻ em làm sai vì xor không ra cờ. 
+
+**Tuy nhiên**
+
 Đọc kỹ hàm `flag_func` em rút ra được:
 - `flag_buffer` có 18 byte.
 - Toàn bộ byte thứ 19 trở đi đều do chương trình tạo ra.
 - `flag` in ra là `flag_buffer2`. Mà nó copy `flag_buffer` từ lúc chưa mã hóa các byte bên dưới.
+
 => Flag gồm 18 ký tự:`unh4Ndl33xC3pTi0n` (17 ký tự) + 1 byte cuối không bị mã hóa là `5F`.
 
 ![image](https://hackmd.io/_uploads/SJFAn8Gelx.png)
+
 ![image](https://hackmd.io/_uploads/Syvla8Mxll.png)
+
 ![image](https://hackmd.io/_uploads/Hy49pLMeee.png)
 
 EM thử tải file mới và xem lại thì thấy lập luận không sai.
@@ -506,92 +553,132 @@ Copy 100 byte của flag ngay sau khi nhập.
 
 flag:`unh4Ndl33xC3pTi0n_`.
 ![image](https://hackmd.io/_uploads/BJmmi8zlll.png)
-Em đúng được 18 ký tự vậy là lập luận của em đúng. Em sai ở cách patch. Em xin phép ngừng tại đây vì em hết cách rồi.
+
+Em đúng được 18 ký tự vậy là lập luận của em đúng. Em sai ở cách patch. Em xin phép ngừng tại đây vì em chả nghĩ ra được gì nữa.
 
 # anti1
 Đầu tiên chạy thử file.
+
 ![image](https://hackmd.io/_uploads/ByNoGvXlxl.png)
 
 ![image](https://hackmd.io/_uploads/BJGCfPmlxl.png)
+
 Có rất nhiều return. Ta sẽ chuyển sang text view để tìm hiểu.
 
 ![image](https://hackmd.io/_uploads/S1Um7PQxxe.png)
+
 Ta cần code đoạn này.
+
 ![image](https://hackmd.io/_uploads/S1-D7DQlxg.png)
+
 Bắt đầu từ đây. undefine và code lại + nop. Sau đó nó sẽ tự code hết toàn bộ phần dưới.
 
 ![image](https://hackmd.io/_uploads/HyVJ4vQegl.png)
+
 Còn 3 phát nữa.
 
 ![image](https://hackmd.io/_uploads/SkcEND7xxl.png)
-![image](https://hackmd.io/_uploads/rknZrw7gle.png)
-![image](https://hackmd.io/_uploads/HJv8Bvmgxx.png)
-Có `jge` không nhảy vào đầu nên ta kiểm tra chỗ đấy. 
-![image](https://hackmd.io/_uploads/B1l5IPXllg.png)
-Có thể là flag. Code nó.
-![image](https://hackmd.io/_uploads/BJp1wwmlgl.png)
-![image](https://hackmd.io/_uploads/HkdvwP7glg.png)
-Nó `jmp` về đoạn cũ này. Code cái `data 8b` nó sẽ sửa luôn cái bên dưới. Cứ code và sử dụng kỹ thuật như trên ta sẽ được:
-![image](https://hackmd.io/_uploads/BkyWKvmell.png)
-Đâu là vòng lặp so sánh từng byte. Ta nop các dữ liệu thừa là xong.
 
-Ta cũng tìm được hướng làm luôn.
+![image](https://hackmd.io/_uploads/rknZrw7gle.png)
+
+![image](https://hackmd.io/_uploads/HJv8Bvmgxx.png)
+
+Có `jge` không nhảy vào đầu nên ta kiểm tra chỗ đấy. 
+
+![image](https://hackmd.io/_uploads/B1l5IPXllg.png)
+
+Có thể là flag. Code nó.
+
+![image](https://hackmd.io/_uploads/BJp1wwmlgl.png)
+
+![image](https://hackmd.io/_uploads/HkdvwP7glg.png)
+
+Nó `jmp` về đoạn cũ này. Code cái `data 8b` nó sẽ sửa luôn cái bên dưới. Cứ code và sử dụng kỹ thuật như trên ta sẽ được:
+
+![image](https://hackmd.io/_uploads/BkyWKvmell.png)
+
+Đâu là vòng lặp so sánh từng byte. Ta `nop` các dữ liệu thừa là xong.
+
+Em cũng tìm được hướng làm luôn.
+
 ![image](https://hackmd.io/_uploads/HJqBcvQxex.png)
+
 ![image](https://hackmd.io/_uploads/ByVP5DXgge.png)
 
-So sánh 53 byte của biến `byte_4218b0` với với giá trị ở địa trị `var_78` trở xuống, khả năng là bufer.
+So sánh 53 byte của biến `byte_4218b0` với với giá trị ở địa chỉ `var_78` trở xuống, khả năng là bufer.
 `byte_`:
+
 `00 00 00 00 06 38 73 2D 70 7E 11 47 1D 3F 3B 76 1A 26 77 30 2A 12 52 55 1D 28 3B 24 29 2F 1C 2B 2C 51 12 7E 3B 7B 26 1A 20 2D 29 73 3A 7E 10 55 1D 6A 0D 1B 38` (53 byte).
 
 Sau khi tìm hiểu em phát hiện ra chương trình có 2 luồng nhảy vào cờ.
 - luồng 1: Rất nhiều khối như dưới. Đều liên quan đến `var_78`
+
  ![image](https://hackmd.io/_uploads/rkR8G_Xleg.png)
 
 - Luồng 2: Có vẻ đơn giản hơn
+
 ![image](https://hackmd.io/_uploads/rJJsMOQlgl.png)
+
 ![image](https://hackmd.io/_uploads/B1MkXdXgxx.png)
+
 Đây là vòng lặp 53 lần.
 
 ![image](https://hackmd.io/_uploads/HyWMXOmxee.png)
-mov 53 byte của 1 vùng nhớ vào biến `byte_` trên. Giá trị ở trên không còn ý nghĩa.
+
+mov 53 byte của 1 vùng nhớ vào biến `byte_` trên => Giá trị ở trên không còn ý nghĩa.
+
 ![image](https://hackmd.io/_uploads/SyzXQOXxgg.png)
+
 Tăng index.
 
 `buffer`:
-`00 00 00 00 06 38 26 77 30 58 7E 42 2A 7F 3F 29 1A 21 36 37 1C 55 49 12 30 78 0C 28 30 30 37 1C 21 12 7E 52 2D 26 60 1A 24 2D 37 72 1C 45 44 43 37 2C 6C 7A 38` (53 byte).
+
+`00 00 00 00 06 38 26 77 30 58 7E 42 2A 7F 3F 29 1A 21 36 37 1C 55 49 12 30 78 0C 28 30 30 37 1C 21 12 7E 52 2D 26 60 1A 24 2D 37 72 1C 45 44 43 37 2C 6C 7A 38` (53 byte). 
+
+Đây mới là giá trị cần sử dụng.
 
 Ở trên nữa là:
+
 ![image](https://hackmd.io/_uploads/r1BOs97lel.png)
+
 Chú ý ở dưới cùng có truy cập vào PEB->beingdebugged. Nếu debug thì không nhảy vào luồng 2. Vậy ta chọn đúng luồng rồi. Sửa thành `jmp`.
 
 Đọc nốt hàm sub. Hàm này ngắn có thể compile sang c.
+
 ![image](https://hackmd.io/_uploads/By-92cXgxg.png)
+
 a1 là edx => a1 là địa chỉ `var_78`.
+
 a2 là ecx => a2 là offset Bksec.
+
 a3 = 64h = 100.
 
 Đầu tiên tính độ dài `bksec` = 12
+
 a1[i] ^ a2[i % len].
 
 
 ![image](https://hackmd.io/_uploads/HknL-j7glg.png)
+
 Đây là khối lệnh ở trên. Nó tạo 1 vùng nhớ cho flag là đúng 100 byte. Hơn nữa offset buffer là giá trị của `var_78`.
 
 ![image](https://hackmd.io/_uploads/SylMzsQeex.png)
+
 Đây là khối lệnh sau khối ở trên. Do ở trên `mov var_bc, 0f` nên nó không nhảy mà đi xuống khối gây exception ở dưới.
 
 ![image](https://hackmd.io/_uploads/S1kXMjQxgl.png)
+
 Đây là đầu hàm main. Nó tạo 1 `SEH` để xử lý exception.
 
 Em đã hình dung qua luồng chương trình.
 - Tạo SEH.
 - Nhập flag và gây exception.
-- nhảy vào bksecc, encode flag bằng cách xor với bksec
+- nhảy vào bksecc, encode flag bằng cách xor với bksec.
 - tạo 1 buffer để so sánh với flag.
 
 Giờ ta làm ngược lại như sau:
 - buffer đã có 53 byte.
-- xor với bksec
+- xor với bksec.
 - Nhận được flag.
 
 ```c
@@ -614,5 +701,6 @@ for(i =0 ; i< 53; i++){
     return 0;
 }
 ```
+![image](https://github.com/user-attachments/assets/b4427aac-e3a3-4cae-a54b-19bd610f6f3d)
 
 flag: `BKSEC{e4sy_ch4ll_but_th3r3_must_b3_som3_ant1_debug??}`
