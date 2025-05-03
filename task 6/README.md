@@ -704,3 +704,5 @@ for(i =0 ; i< 53; i++){
 ![image](https://github.com/user-attachments/assets/b4427aac-e3a3-4cae-a54b-19bd610f6f3d)
 
 flag: `BKSEC{e4sy_ch4ll_but_th3r3_must_b3_som3_ant1_debug??}`
+
+![image](https://github.com/user-attachments/assets/c4e32a49-3a04-4263-b58f-a4601cac5226)
