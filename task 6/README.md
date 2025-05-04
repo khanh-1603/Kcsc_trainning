@@ -193,6 +193,7 @@ Nhìn sơ qua
 Tạo buffer cho 2 biến và copy giá trị của biến `unk` sang bên `buf2`.
 
 `buff2`:
+
 `19 2C 30 2A 79 F9 54 02 B3 A9 6C D6 91 80 95 04 29 59 E8 A3` 
 
 `0F 79 BD 86 AF 05 13 6C FE 75 DB 2B AE E0 F0 5D 88 4B 86 89`
@@ -208,6 +209,7 @@ Giờ ta xem phần dưới.
 ![image](https://github.com/user-attachments/assets/fc6e20bb-5a5a-40e5-86e3-41fb784cb648)
 
 Nếu `if` chạy:
+
 Rút gọn lại.
 ```c
   int v9 = strlen;
@@ -305,7 +307,7 @@ int main() {
 
 Em không hiểu sao khi thay vào vẫn sai.
 
-flag: PTITCTF{bdc90e23aa0415e94d0ac46a938efcf3}
+flag: `PTITCTF{bdc90e23aa0415e94d0ac46a938efcf3}`.
 
 Em xin phép dừng tại đây. Em sửa code mãi mà chả ra.
 
@@ -499,6 +501,8 @@ Có vẻ do em patch sai các đoạn antidebug. Nhưng chung quy lại flag là
 
 ![image](https://hackmd.io/_uploads/ByNoGvXlxl.png)
 
+Vào xem sơ qua.
+
 ![image](https://hackmd.io/_uploads/BJGCfPmlxl.png)
 
 Có rất nhiều return. Ta sẽ chuyển sang text view để tìm hiểu.
@@ -509,7 +513,7 @@ Ta cần code đoạn này.
 
 ![image](https://hackmd.io/_uploads/S1-D7DQlxg.png)
 
-Bắt đầu từ đây. undefine và code lại + nop. Sau đó nó sẽ tự code hết toàn bộ phần dưới.
+Bắt đầu từ đây. undefine và code lại + `nop`. Sau đó nó sẽ tự code hết toàn bộ phần dưới.
 
 ![image](https://hackmd.io/_uploads/HyVJ4vQegl.png)
 
@@ -573,27 +577,27 @@ Tăng index.
 
 `00 00 00 00 06 38 26 77 30 58 7E 42 2A 7F 3F 29 1A 21 36 37 1C 55 49 12 30 78 0C 28 30 30 37 1C 21 12 7E 52 2D 26 60 1A 24 2D 37 72 1C 45 44 43 37 2C 6C 7A 38` (53 byte). 
 
-Đây mới là giá trị cần sử dụng.
+= > Đây mới là giá trị cần sử dụng.
 
-Ở trên nữa là:
+Khối lệnh ở trên là:
 
 ![image](https://hackmd.io/_uploads/r1BOs97lel.png)
 
-Chú ý ở dưới cùng có truy cập vào PEB->beingdebugged. Nếu debug thì không nhảy vào luồng 2. Vậy ta chọn đúng luồng rồi. Sửa thành `jmp`.
+Chú ý ở dưới cùng có truy cập vào `PEB->beingdebugged`. Nếu debug thì không nhảy vào luồng 2. Vậy ta chọn đúng luồng rồi. Sửa thành `jmp`.
 
 Đọc nốt hàm sub. Hàm này ngắn có thể compile sang c.
 
 ![image](https://hackmd.io/_uploads/By-92cXgxg.png)
 
-a1 là edx => a1 là địa chỉ `var_78`.
+`a1` là `edx` => `a1` là địa chỉ `var_78`.
 
-a2 là ecx => a2 là offset Bksec.
+`a2` là `ecx` => `a2` là offset `Bksec`.
 
-a3 = 64h = 100.
+`a3 = 64h = 100`.
 
 Đầu tiên tính độ dài `bksec` = 12
 
-a1[i] ^ a2[i % len].
+`a1[i] ^ a2[i % len]`.
 
 
 ![image](https://hackmd.io/_uploads/HknL-j7glg.png)
@@ -609,15 +613,15 @@ a1[i] ^ a2[i % len].
 Đây là đầu hàm main. Nó tạo 1 `SEH` để xử lý exception.
 
 Em đã hình dung qua luồng chương trình.
-- Tạo SEH.
-- Nhập flag và gây exception.
-- nhảy vào bksecc, encode flag bằng cách xor với bksec.
-- tạo 1 buffer để so sánh với flag.
+- Tạo `SEH`.
+- Nhập `flag` và gây exception.
+- nhảy vào `bksecc`, encode `flag` bằng cách xor với `bksec`.
+- tạo 1 buffer để so sánh với `flag`.
 
 Giờ ta làm ngược lại như sau:
 - buffer đã có 53 byte.
-- xor với bksec.
-- Nhận được flag.
+- xor với `bksec`.
+- Nhận được `flag`.
 
 ```c
 #include <stdio.h>
