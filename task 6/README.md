@@ -190,13 +190,15 @@ Nhìn sơ qua
 
 `v11 = VdlKe9upfBFkkO0L`
 
-Tạo buffer cho 2 biến và copy giá trị của biến `unk` sao bên `buf2`.
+Tạo buffer cho 2 biến và copy giá trị của biến `unk` sang bên `buf2`.
 
-`buff2 = 19 2C 30 2A 79 F9 54 02 B3 A9 
-         6C D6 91 80 95 04 29 59 E8 A3 
-         0F 79 BD 86 AF 05 13 6C FE 75 
-         DB 2B AE E0 F0 5D 88 4B 86 89 
-         33 66 AC 45 9A 6C 78 A6`
+`buff2`:
+`19 2C 30 2A 79 F9 54 02 B3 A9 6C D6 91 80 95 04 29 59 E8 A3` 
+
+`0F 79 BD 86 AF 05 13 6C FE 75 DB 2B AE E0 F0 5D 88 4B 86 89`
+
+`33 66 AC 45 9A 6C 78 A6`
+
 (48 ký tự)
 
 Dưới nữa là `printf` và `scanf`.
